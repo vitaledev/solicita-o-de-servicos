@@ -122,6 +122,81 @@
             --tw-ring-color: #390ea6 !important;
         }
 
+        /* Separadores sutis entre os blocos do documento */
+        .pdf-section-divider {
+            position: relative;
+            height: 5px;
+            margin: 10px 0;
+        }
+
+        .pdf-section-divider::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            height: 1px;
+            background: #d1d5db;
+        }
+
+        .pdf-section-divider::after,
+        .pdf-section-divider span {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 5px;
+            height: 5px;
+            border-radius: 999px;
+            background: #9ca3af;
+        }
+
+        .pdf-section-divider::after {
+            left: 0;
+        }
+
+        .pdf-section-divider span {
+            right: 0;
+        }
+
+        /* Chave lateral que acompanha a altura da lista de links */
+        .links-layout {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .links-bracket {
+            position: relative;
+            width: 10px;
+            flex-shrink: 0;
+        }
+
+        .links-bracket::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 9px;
+            border-right: 1.5px solid #230867;
+            border-top: 1.5px solid #230867;
+            border-bottom: 1.5px solid #230867;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .links-bracket::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -3px;
+            width: 6px;
+            height: 6px;
+            background: #ffffff;
+            border-right: 1.5px solid #230867;
+            border-bottom: 1.5px solid #230867;
+            transform: translateY(-50%) rotate(-45deg);
+        }
+
         /* Configuração Estreita da Folha A4 para prevenir quebras e páginas em branco */
         .a4-page {
             width: 210mm;
@@ -469,10 +544,8 @@
         <main class="flex-1 bg-slate-950 overflow-y-auto p-4 md:p-8 flex justify-center items-start relative">
             
             <!-- Floating Zoom/Status Bar with Overflow Alert -->
-            <div id="status-bar" class="fixed bottom-6 right-8 bg-slate-900/95 backdrop-blur-md border border-slate-800 px-4 py-2.5 rounded-full shadow-2xl flex items-center space-x-3 z-30 no-print text-xs text-slate-300">
-                <span id="status-badge" class="flex items-center gap-1.5 font-medium text-emerald-400">
-                    <i data-lucide="shield-check" class="w-4 h-4"></i> Layout A4 Validado • Sem páginas em branco
-                </span>
+            <div id="status-bar" class="fixed bottom-6 right-8 bg-slate-900/95 backdrop-blur-md border border-slate-800 px-4 py-2.5 rounded-full shadow-2xl flex items-center space-x-3 z-30 no-print text-xs text-slate-300 hidden">
+                <span id="status-badge" class="flex items-center gap-1.5 font-medium text-emerald-400"></span>
             </div>
 
             <!-- PDF PRINT ROOT CANVAS -->
@@ -488,22 +561,22 @@
                     
                     <div id="page-2-content" class="flex-1 flex flex-col overflow-hidden">
                         <!-- Header Bar -->
-                        <div class="w-full flex items-center justify-between pb-1 mb-2.5">
+                        <div class="w-full flex items-center justify-between pb-2 mb-3.5 border-b border-slate-200">
                             <div class="flex items-center gap-3">
                                 <img id="preview-header-logo-img" class="h-6 object-contain hidden" src="" alt="Header Logo">
-                                <h2 class="text-xs font-bold tracking-tight uppercase" style="color: #230867;">
+                                <h2 class="text-sm font-bold tracking-wide uppercase" style="color: #230867;">
                                     Solicitação de serviços
                                 </h2>
                             </div>
                             <div class="text-right">
-                                <div id="preview-row-date" class="text-[10px]" style="color: #230867;"><span class="font-bold">Data: </span><span id="preview-doc-date"></span></div>
+                                <div id="preview-row-date" class="text-[10px] font-medium" style="color: #230867;"><span class="font-bold">Data: </span><span id="preview-doc-date"></span></div>
                             </div>
                         </div>
 
                         <!-- Metadata Table Box -->
-                        <div id="metadata-container" class="rounded-lg p-2.5 mb-2.5 bg-slate-100 text-xs space-y-1.5">
+                        <div id="metadata-container" class="rounded-lg p-3 mb-3.5 bg-slate-100 text-[11px] space-y-2">
                             <!-- Row 1 -->
-                            <div id="meta-row-1" class="grid grid-cols-2 gap-4 pb-1 border-b border-slate-200">
+                            <div id="meta-row-1" class="grid grid-cols-2 gap-6 pb-1.5 border-b border-slate-200">
                                 <div id="meta-item-1" class="flex gap-2">
                                     <span class="font-bold min-w-[70px]" style="color: #230867;">De:</span>
                                     <span id="preview-doc-from" class="font-medium" style="color: #230867;"></span>
@@ -514,7 +587,7 @@
                                 </div>
                             </div>
                             <!-- Row 2 -->
-                            <div id="meta-row-2" class="grid grid-cols-2 gap-4 pb-1 border-b border-slate-200">
+                            <div id="meta-row-2" class="grid grid-cols-2 gap-6 pb-1.5 border-b border-slate-200">
                                 <div id="meta-item-3" class="flex gap-2">
                                     <span class="font-bold min-w-[70px]" style="color: #230867;">Assunto:</span>
                                     <span id="preview-doc-subject" class="font-medium" style="color: #230867;"></span>
@@ -525,7 +598,7 @@
                                 </div>
                             </div>
                             <!-- Row 3 -->
-                            <div id="meta-row-3" class="grid grid-cols-2 gap-4">
+                            <div id="meta-row-3" class="grid grid-cols-2 gap-6">
                                 <div id="meta-item-5" class="flex gap-2">
                                     <span class="font-bold min-w-[70px]" style="color: #230867;">Prioridade:</span>
                                     <span id="preview-doc-priority" class="font-medium px-1.5 py-0.2 rounded text-white bg-purple-700 text-[10px]"></span>
@@ -538,17 +611,19 @@
                         </div>
 
                         <!-- Objective Section -->
-                        <div id="preview-section-objectives" class="mb-2.5">
-                            <h3 class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5" style="color: #230867;">
-                                <span class="w-2 h-2 bg-purple-600 rounded-full"></span> OBJETIVO:
+                        <div id="preview-section-objectives" class="mb-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                            <h3 class="font-bold text-[13px] uppercase tracking-wide mb-2 border-l-4 pl-2" style="color: #230867; border-color: #230867;">
+                                Objetivo da solicitação
                             </h3>
-                            <ul id="preview-objectives-list" class="space-y-1 pl-2" style="color: #230867;">
+                            <ul id="preview-objectives-list" class="space-y-1.5 pl-1 text-[11px] leading-relaxed" style="color: #230867;">
                                 <!-- Dynamic Bullets -->
                             </ul>
                         </div>
 
+                        <div class="pdf-section-divider" aria-hidden="true"><span></span></div>
+
                         <!-- Tasks / Scope Breakdown Table -->
-                        <div id="preview-section-tasks" class="mb-2.5 border rounded-lg p-2 bg-slate-50/50" style="border-color: rgba(35,8,103,0.15);">
+                        <div id="preview-section-tasks" class="mb-2.5 rounded-lg p-2 bg-slate-50/50">
                             <h3 class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5" style="color: #230867;">
                                 <i data-lucide="check-square" class="w-3.5 h-3.5 text-purple-600"></i> Atividades e Entregáveis Solicitados:
                             </h3>
@@ -557,26 +632,35 @@
                             </div>
                         </div>
 
+                        <div class="pdf-section-divider" aria-hidden="true"><span></span></div>
+
                         <!-- Inline Scope Image Attachment -->
                         <div id="preview-section-scope-img" class="mb-2.5 hidden">
-                            <div class="border rounded-lg p-1.5 bg-slate-50 flex flex-col items-center" style="border-color: rgba(35,8,103,0.2);">
+                            <div class="rounded-lg p-1.5 bg-slate-50 flex flex-col items-center">
                                 <img id="preview-scope-img" class="max-h-28 object-contain rounded" src="" alt="Escopo técnico">
                                 <span id="preview-scope-caption" class="text-[10px] mt-1 font-medium italic" style="color: #230867;"></span>
                             </div>
                         </div>
 
                         <!-- Links Section Table -->
-                        <div id="preview-section-links" class="mb-2.5 border rounded-xl p-2 bg-slate-50/70" style="border-color: rgba(35,8,103,0.15);">
-                            <h3 class="font-bold text-xs uppercase tracking-wider mb-1.5" style="color: #230867;">Links Clicáveis e Acessos Rápidos</h3>
-                            <div id="preview-links-list" class="space-y-1.5">
-                                <!-- Dynamic Links -->
+                        <div id="preview-section-links" class="mb-2.5 rounded-xl p-2 bg-slate-50/70">
+                            <div class="links-layout">
+                                <div id="preview-links-list" class="flex-1 space-y-1.5">
+                                    <!-- Dynamic Links -->
+                                </div>
+                                <div class="links-bracket" aria-hidden="true"></div>
+                                <h3 class="self-center font-medium italic text-[11px] flex items-center gap-2 whitespace-nowrap" style="color: #230867;">
+                                    <span class="text-purple-600 not-italic">•</span> Links clicáveis
+                                </h3>
                             </div>
                         </div>
 
+                        <div class="pdf-section-divider" aria-hidden="true"><span></span></div>
+
                         <!-- Strategic Importance Callout -->
-                        <div id="preview-section-urgency" class="mb-2.5 font-medium leading-relaxed text-[11px]" style="color: #230867;">
-                            <p id="preview-urgency-text">
-                                <strong style="color: #230867;">Importância Estratégica e Urgência:</strong> 
+                        <div id="preview-section-urgency" class="mb-3 w-[92%] mx-auto font-medium leading-relaxed text-[12px] text-justify" style="color: #230867;">
+                            <p id="preview-urgency-text" style="text-align: justify;">
+                                <strong style="color: #230867;">Importância Estratégica e Urgência:</strong>
                             </p>
                         </div>
 
@@ -1201,15 +1285,16 @@ incluindo a data estimada para entrega.</p>
         // Real-Time Overflow Alert Check for Page 2
         function checkPage2Overflow() {
             const page2 = document.getElementById('preview-page-body');
+            const statusBar = document.getElementById('status-bar');
             const statusBadge = document.getElementById('status-badge');
             
             // Check if scrollHeight exceeds clientHeight (297mm bound)
             if (page2.scrollHeight > page2.clientHeight + 2) {
+                statusBar.classList.remove('hidden');
                 statusBadge.className = "flex items-center gap-1.5 font-bold text-amber-400 animate-pulse";
                 statusBadge.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Atenção: Conteúdo excedeu a Folha A4! Remova itens para evitar quebras involuntárias.`;
             } else {
-                statusBadge.className = "flex items-center gap-1.5 font-medium text-emerald-400";
-                statusBadge.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4"></i> Layout A4 Validado • Sem páginas em branco`;
+                statusBar.classList.add('hidden');
             }
         }
 
