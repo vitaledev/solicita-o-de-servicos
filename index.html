@@ -53,18 +53,73 @@
             color: #230867;
         }
 
-        /* Força texto branco e legível nos campos e painel de configuração */
-        aside, aside label, aside h3, aside h4, aside span, aside p {
-            color: #f1f5f9 !important;
+        /* Painel de dados claro, com campos legíveis */
+        #form-editor, #form-editor label, #form-editor h3, #form-editor h4, #form-editor span, #form-editor p {
+            color: #1f2937 !important;
         }
 
-        aside input, aside textarea, aside select {
-            color: #ffffff !important;
-            background-color: #1e293b !important;
+        #form-editor input, #form-editor textarea, #form-editor select {
+            color: #1f2937 !important;
+            background-color: #ffffff !important;
         }
 
-        aside input::placeholder, aside textarea::placeholder {
-            color: #94a3b8 !important;
+        #form-editor input::placeholder, #form-editor textarea::placeholder {
+            color: #64748b !important;
+        }
+
+        /* Cor de ação e destaques da interface */
+        header [class*="bg-purple-"], #status-bar [class*="bg-purple-"] {
+            background-color: #5715ff !important;
+        }
+
+        header button[class*="bg-purple-"]:hover, #status-bar button[class*="bg-purple-"]:hover {
+            background-color: #4610d0 !important;
+        }
+
+        header [class*="text-purple-"], #status-bar [class*="text-purple-"] {
+            color: #5715ff !important;
+        }
+
+        header [class*="border-purple-"], #status-bar [class*="border-purple-"] {
+            border-color: #5715ff !important;
+        }
+
+        /* Destaques da prévia e impressão do PDF */
+        #pdf-root [class*="bg-purple-"] {
+            background-color: #230867 !important;
+        }
+
+        #pdf-root [class*="text-purple-"] {
+            color: #230867 !important;
+        }
+
+        #pdf-root [class*="border-purple-"] {
+            border-color: #230867 !important;
+        }
+
+        /* Destaques exclusivos do formulário */
+        #form-editor [class*="bg-purple-"] {
+            background-color: #390ea6 !important;
+        }
+
+        #form-editor button[class*="bg-purple-"]:hover {
+            background-color: #2b0a80 !important;
+        }
+
+        #form-editor [class*="text-purple-"] {
+            color: #390ea6 !important;
+        }
+
+        #form-editor [class*="border-purple-"] {
+            border-color: #390ea6 !important;
+        }
+
+        #form-editor [class*="focus:border-purple-"]:focus {
+            border-color: #390ea6 !important;
+        }
+
+        #form-editor [class*="focus:ring-purple-"]:focus {
+            --tw-ring-color: #390ea6 !important;
         }
 
         /* Configuração Estreita da Folha A4 para prevenir quebras e páginas em branco */
@@ -155,12 +210,12 @@
 <body class="h-screen flex flex-col overflow-hidden">
 
     <!-- TOP NAVBAR -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between z-20 no-print flex-shrink-0">
+    <header class="bg-[#281d61] border-b border-[#211751] px-6 py-3 flex items-center justify-between z-20 no-print flex-shrink-0">
         <div class="flex items-center space-x-3">
             <!-- Logo do site -->
             <img src="https://i.imgur.com/MqZSgOr.png"
                  alt="Logo"
-                 class="h-9 max-w-[140px] object-contain">
+                 class="h-14 w-auto max-w-none object-contain">
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">Gerador de Solicitação de Serviços</h1>
                 <p class="text-xs text-slate-400">Proteção Anti-Página em Branco • Padrão A4 Perfeito</p>
@@ -185,20 +240,20 @@
     <div class="flex flex-1 overflow-hidden">
 
         <!-- LEFT PANEL: FORM EDITOR -->
-        <aside class="w-full md:w-[460px] lg:w-[490px] bg-slate-900 border-r border-slate-800 flex flex-col no-print flex-shrink-0 z-10">
+        <aside id="form-editor" class="w-full md:w-[460px] lg:w-[490px] bg-white border-r border-slate-200 flex flex-col no-print flex-shrink-0 z-10">
             
             <!-- Tab Navigation -->
-            <div class="flex border-b border-slate-800 bg-slate-950/50 text-xs font-medium text-slate-400">
+            <div class="flex border-b border-slate-200 bg-white text-xs font-medium text-slate-600">
                 <button onclick="switchTab('capa')" id="tab-capa" class="flex-1 py-3 px-2 border-b-2 border-purple-500 text-purple-400 font-semibold flex items-center justify-center gap-1.5 transition">
                     <i data-lucide="layout" class="w-3.5 h-3.5"></i> Capa
                 </button>
-                <button onclick="switchTab('cabecalho')" id="tab-cabecalho" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                <button onclick="switchTab('cabecalho')" id="tab-cabecalho" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-900 flex items-center justify-center gap-1.5 transition">
                     <i data-lucide="info" class="w-3.5 h-3.5"></i> Dados
                 </button>
-                <button onclick="switchTab('conteudo')" id="tab-conteudo" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                <button onclick="switchTab('conteudo')" id="tab-conteudo" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-900 flex items-center justify-center gap-1.5 transition">
                     <i data-lucide="list" class="w-3.5 h-3.5"></i> Conteúdo
                 </button>
-                <button onclick="switchTab('imagens')" id="tab-imagens" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                <button onclick="switchTab('imagens')" id="tab-imagens" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-900 flex items-center justify-center gap-1.5 transition">
                     <i data-lucide="image" class="w-3.5 h-3.5"></i> Imagens & Anexos
                 </button>
             </div>
@@ -343,7 +398,7 @@
                 <div id="section-imagens" class="space-y-5 hidden">
                     
                     <!-- Header Logo Image Option -->
-                    <div class="p-3 bg-slate-800/60 border border-slate-700 rounded-xl space-y-2">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                         <label class="block text-xs font-bold text-slate-300 uppercase">Logo no Cabeçalho (Opcional)</label>
                         <div class="flex gap-2">
                             <input type="text" id="input-header-logo" oninput="updateDocument()" class="flex-1 bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" placeholder="URL da Logo">
@@ -354,7 +409,7 @@
                     </div>
 
                     <!-- Inline Diagram / Scope Image (Page 2) -->
-                    <div class="p-3 bg-slate-800/60 border border-slate-700 rounded-xl space-y-2">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                         <label class="block text-xs font-bold text-slate-300 uppercase">Imagem de Escopo / Diagrama Técnico</label>
                         <div class="flex gap-2">
                             <input type="text" id="input-scope-image" oninput="updateDocument()" class="flex-1 bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" placeholder="URL da imagem (ou envie do PC)">
@@ -366,7 +421,7 @@
                     </div>
 
                     <!-- Signatures Area (Pinned at the bottom) -->
-                    <div class="p-3 bg-slate-800/60 border border-slate-700 rounded-xl space-y-3">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                         <h4 class="text-xs font-bold text-slate-300 uppercase">Assinaturas / Aprovações (Fixas no Final)</h4>
                         
                         <div class="space-y-2 border-t border-slate-700 pt-2">
@@ -530,12 +585,9 @@
                     <!-- Bottom Fixed Content Area: Action Warning Box & Signatures & Footer -->
                     <div class="mt-auto pt-1">
                         <!-- Call to Action Alert Warning Box (Centralizado e Formatado em 2 linhas) -->
-                        <div id="preview-section-action" class="bg-purple-50/80 p-2.5 rounded-lg flex items-center justify-center gap-2.5 mb-2" style="border-color: rgba(35,8,103,0.3);">
-                            <div class="p-1 bg-purple-600 text-white rounded-full flex-shrink-0">
-                                <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
-                            </div>
-                            <p id="preview-action-text" class="text-[10px] font-bold italic leading-tight text-center whitespace-pre-line" style="color: #230867;">***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,
-incluindo a data estimada para entrega***</p>
+                        <div id="preview-section-action" class="p-2.5 rounded-lg flex items-center justify-center mb-2" style="background-color: #230867; border-color: rgba(35,8,103,0.3);">
+                            <p id="preview-action-text" class="text-[10px] font-bold italic leading-tight text-center whitespace-pre-line" style="color: #ffffff;">Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,
+incluindo a data estimada para entrega.</p>
                         </div>
 
                         <!-- Signatures & Approvals Box -->
@@ -624,7 +676,7 @@ incluindo a data estimada para entrega***</p>
             scopeImage: "",
             scopeCaption: "",
             urgencyText: "",
-            actionText: "***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega***",
+            actionText: "Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega.",
             signatures: {
                 sig1Name: "",
                 sig1Img: "",
@@ -689,7 +741,7 @@ incluindo a data estimada para entrega***</p>
                     btn.className = "flex-1 py-3 px-2 border-b-2 border-purple-500 text-purple-400 font-semibold flex items-center justify-center gap-1.5 transition";
                     section.classList.remove('hidden');
                 } else {
-                    btn.className = "flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition";
+                    btn.className = "flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-900 flex items-center justify-center gap-1.5 transition";
                     section.classList.add('hidden');
                 }
             });
@@ -793,7 +845,7 @@ incluindo a data estimada para entrega***</p>
             container.innerHTML = '';
             state.links.forEach((lnk, idx) => {
                 const div = document.createElement('div');
-                div.className = "p-3 bg-slate-800/80 border border-slate-700 rounded-lg space-y-2";
+                div.className = "p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2";
                 div.innerHTML = `
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-bold text-slate-400 uppercase">Link #${idx + 1}</span>
@@ -829,7 +881,7 @@ incluindo a data estimada para entrega***</p>
             container.innerHTML = '';
             state.attachments.forEach((att, idx) => {
                 const div = document.createElement('div');
-                div.className = "p-3 bg-slate-800/80 border border-slate-700 rounded-lg space-y-2";
+                div.className = "p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2";
                 div.innerHTML = `
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-bold text-slate-400 uppercase">Anexo Visual #${idx + 1}</span>
@@ -1042,7 +1094,7 @@ incluindo a data estimada para entrega***</p>
                 document.getElementById('preview-action-text').innerText = state.actionText;
             } else {
                 actionSec.style.display = 'flex';
-                document.getElementById('preview-action-text').innerText = "***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega***";
+                document.getElementById('preview-action-text').innerText = "Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega.";
             }
 
             // 9. Signatures Box
@@ -1185,7 +1237,7 @@ incluindo a data estimada para entrega***</p>
                 { name: "Planilha de acompanhamento", url: "https://exemplo.com" }
             ];
             state.urgencyText = "A conclusão deste processo é fundamental para o avanço do planejamento de marketing, inicio de campanhas e atualização dos canais oficiais do grupo.";
-            state.actionText = "***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega***";
+            state.actionText = "Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega.";
             state.signatures.sig1Name = "João - Solicitante";
             state.signatures.sig2Name = "Gestor TI";
             state.attachments = [
