@@ -290,10 +290,9 @@
             <!-- Logo do site -->
             <img src="https://i.imgur.com/MqZSgOr.png"
                  alt="Logo"
-                 class="h-14 w-auto max-w-none object-contain">
+                 class="w-48 h-auto object-contain flex-shrink-0">
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">Gerador de Solicitação de Serviços</h1>
-                <p class="text-xs text-slate-400">Proteção Anti-Página em Branco • Padrão A4 Perfeito</p>
             </div>
         </div>
 
@@ -620,7 +619,7 @@
                             </ul>
                         </div>
 
-                        <div class="pdf-section-divider" aria-hidden="true"><span></span></div>
+                        <div id="divider-after-objectives" class="pdf-section-divider" aria-hidden="true"><span></span></div>
 
                         <!-- Tasks / Scope Breakdown Table -->
                         <div id="preview-section-tasks" class="mb-2.5 rounded-lg p-2 bg-slate-50/50">
@@ -632,7 +631,7 @@
                             </div>
                         </div>
 
-                        <div class="pdf-section-divider" aria-hidden="true"><span></span></div>
+                        <div id="divider-after-tasks" class="pdf-section-divider" aria-hidden="true"><span></span></div>
 
                         <!-- Inline Scope Image Attachment -->
                         <div id="preview-section-scope-img" class="mb-2.5 hidden">
@@ -655,7 +654,7 @@
                             </div>
                         </div>
 
-                        <div class="pdf-section-divider" aria-hidden="true"><span></span></div>
+                        <div id="divider-after-links" class="pdf-section-divider" aria-hidden="true"><span></span></div>
 
                         <!-- Strategic Importance Callout -->
                         <div id="preview-section-urgency" class="mb-3 w-[92%] mx-auto font-medium leading-relaxed text-[12px] text-justify" style="color: #230867;">
@@ -1170,6 +1169,16 @@ incluindo a data estimada para entrega.</p>
             } else {
                 urgencySec.style.display = 'none';
             }
+
+            // Exibe linhas divisórias apenas quando houver conteúdo dos dois lados.
+            const hasObjectives = filteredObjectives.length > 0;
+            const hasTasks = filteredTasks.length > 0;
+            const hasScope = Boolean(state.scopeImage);
+            const hasLinks = validLinks.length > 0;
+            const hasUrgency = Boolean(state.urgencyText && state.urgencyText.trim());
+            document.getElementById('divider-after-objectives').style.display = hasObjectives && (hasTasks || hasScope || hasLinks || hasUrgency) ? 'block' : 'none';
+            document.getElementById('divider-after-tasks').style.display = hasTasks && (hasScope || hasLinks || hasUrgency) ? 'block' : 'none';
+            document.getElementById('divider-after-links').style.display = hasLinks && hasUrgency ? 'block' : 'none';
 
             // 8. Action Warning Box
             const actionSec = document.getElementById('preview-section-action');
