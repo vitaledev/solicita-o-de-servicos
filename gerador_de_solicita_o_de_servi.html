@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Solicitação de Serviços</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf.js for client-side PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Fonts: Ubuntu -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Ubuntu', 'sans-serif'],
+                        ubuntu: ['Ubuntu', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#2b1055',
+                            accent: '#6d28d9',
+                            customText: '#230867'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            font-family: 'Ubuntu', sans-serif !important;
+            box-sizing: border-box !important;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Aplica a cor institucional do documento apenas às páginas de preview/A4 */
+        .a4-page, .a4-page * {
+            color: #230867;
+        }
+
+        /* Força texto branco e legível nos campos e painel de configuração */
+        aside, aside label, aside h3, aside h4, aside span, aside p {
+            color: #f1f5f9 !important;
+        }
+
+        aside input, aside textarea, aside select {
+            color: #ffffff !important;
+            background-color: #1e293b !important;
+        }
+
+        aside input::placeholder, aside textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        /* Configuração Estreita da Folha A4 para prevenir quebras e páginas em branco */
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            padding: 0;
+            margin: 0 auto 28px auto;
+            background: #ffffff;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* Apenas aplica quebra entre páginas visíveis, nunca na última */
+        .a4-page.page-break {
+            page-break-after: always !important;
+            break-after: page !important;
+        }
+
+        /* Dotted Leader Line para Tabela de Links */
+        .dotted-line {
+            flex-grow: 1;
+            border-bottom: 2px dotted #230867;
+            opacity: 0.3;
+            margin: 0 10px;
+            position: relative;
+            top: -3px;
+        }
+
+        /* Regras Estritas de Impressão (window.print) sem páginas extras */
+        @page {
+            size: A4 portrait;
+            margin: 0mm;
+        }
+
+        @media print {
+            html, body, main, .print-container {
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 210mm !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+
+            .no-print, header, aside, #status-bar {
+                display: none !important;
+            }
+
+            .a4-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                max-height: 297mm !important;
+                overflow: hidden !important;
+            }
+
+            /* Esconde explicitamente elementos desativados na impressão */
+            .a4-page[style*="display: none"],
+            [style*="display: none"] {
+                display: none !important;
+            }
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- TOP NAVBAR -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between z-20 no-print flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <!-- Logo do site -->
+            <img src="https://i.imgur.com/MqZSgOr.png"
+                 alt="Logo"
+                 class="h-9 max-w-[140px] object-contain">
+            <div>
+                <h1 class="text-lg font-bold text-white leading-tight">Gerador de Solicitação de Serviços</h1>
+                <p class="text-xs text-slate-400">Proteção Anti-Página em Branco • Padrão A4 Perfeito</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button onclick="loadSampleData()" class="px-3 py-2 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Restaurar Exemplo
+            </button>
+
+            <!-- Ação de impressão -->
+            <div class="relative inline-flex rounded-lg shadow-lg shadow-purple-600/20">
+                <button onclick="window.print()" title="Imprimir ou Salvar via Navegador" class="px-4 py-2 text-xs font-semibold text-white bg-purple-700 hover:bg-purple-600 rounded-lg transition flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- LEFT PANEL: FORM EDITOR -->
+        <aside class="w-full md:w-[460px] lg:w-[490px] bg-slate-900 border-r border-slate-800 flex flex-col no-print flex-shrink-0 z-10">
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-slate-800 bg-slate-950/50 text-xs font-medium text-slate-400">
+                <button onclick="switchTab('capa')" id="tab-capa" class="flex-1 py-3 px-2 border-b-2 border-purple-500 text-purple-400 font-semibold flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="layout" class="w-3.5 h-3.5"></i> Capa
+                </button>
+                <button onclick="switchTab('cabecalho')" id="tab-cabecalho" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i> Dados
+                </button>
+                <button onclick="switchTab('conteudo')" id="tab-conteudo" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="list" class="w-3.5 h-3.5"></i> Conteúdo
+                </button>
+                <button onclick="switchTab('imagens')" id="tab-imagens" class="flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+                    <i data-lucide="image" class="w-3.5 h-3.5"></i> Imagens & Anexos
+                </button>
+            </div>
+
+            <!-- Form Body Controls -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+
+                <!-- TAB 1: COVER CONFIGURATION -->
+                <div id="section-capa" class="space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="image" class="w-4 h-4 text-purple-400"></i> Capa do PDF
+                    </h3>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Imagem da Capa</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="input-cover-image" value="https://i.imgur.com/bfVWX9N.png" oninput="updateDocument()" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="URL da Capa">
+                            <button type="button" onclick="uploadImage('cover')" title="Upar foto do PC" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upar do PC
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-purple-400 mt-1">✓ Desative a opção abaixo se não desejar incluir a página de capa.</p>
+                    </div>
+
+                    <div class="pt-2">
+                        <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="input-toggle-cover" checked onchange="updateDocument()" class="rounded border-slate-700 bg-slate-800 text-purple-600 focus:ring-purple-500">
+                            <span>Exibir Página de Capa no PDF</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- TAB 2: REQUEST METADATA -->
+                <div id="section-cabecalho" class="space-y-4 hidden">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Informações da Solicitação (Opcionais)</h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Data</label>
+                            <input type="text" id="input-doc-date" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Ex: 13 de Agosto 2026">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Prioridade</label>
+                            <select id="input-doc-priority" onchange="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                                <option value="">(Nenhuma)</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Crítica">Crítica</option>
+                                <option value="Média">Média</option>
+                                <option value="Baixa">Baixa</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">De (Solicitante)</label>
+                            <input type="text" id="input-doc-from" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Seu Nome">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Para (Destinatário)</label>
+                            <input type="text" id="input-doc-to" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Setor / Destino">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Assunto</label>
+                        <input type="text" id="input-doc-subject" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Assunto da solicitação">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">E-mail de Contato</label>
+                            <input type="text" id="input-doc-email" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="usuario@exemplo.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Prazo SLA / Entrega</label>
+                            <input type="text" id="input-doc-sla" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Ex: 25/08/2026">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Rodapé</label>
+                        <input type="text" id="input-doc-footer" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Texto do rodapé">
+                    </div>
+                </div>
+
+                <!-- TAB 3: OBJECTIVES, LINKS & CALLOUTS -->
+                <div id="section-conteudo" class="space-y-5 hidden">
+                    <!-- Tópicos do Objetivo -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tópicos do Objetivo</h3>
+                            <button onclick="addObjectiveItem()" class="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Adicionar
+                            </button>
+                        </div>
+                        <div id="objectives-container" class="space-y-2">
+                            <!-- Dynamic Inputs -->
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Entregáveis / Serviços -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Entregáveis / Atividades</h3>
+                            <button onclick="addTaskItem()" class="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Adicionar Item
+                            </button>
+                        </div>
+                        <div id="tasks-container" class="space-y-2">
+                            <!-- Dynamic Tasks Inputs -->
+                        </div>
+                    </div>
+
+                    <!-- Links Clicáveis -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tabela de Links Clicáveis</h3>
+                            <button onclick="addLinkItem()" class="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Adicionar Link
+                            </button>
+                        </div>
+                        <div id="links-container" class="space-y-3">
+                            <!-- Dynamic Link Inputs -->
+                        </div>
+                    </div>
+
+                    <!-- Texto Urgência / Alerta -->
+                    <div class="space-y-3 pt-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Importância Estratégica e Urgência</label>
+                            <textarea id="input-urgency-text" rows="2" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Deixe em branco para ocultar"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Caixa de Alerta / Confirmação (Sempre no rodapé)</label>
+                            <textarea id="input-action-text" rows="3" oninput="updateDocument()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Insira o texto da caixa de alerta"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: STRATEGIC IMAGES & ATTACHMENTS & SIGNATURES -->
+                <div id="section-imagens" class="space-y-5 hidden">
+                    
+                    <!-- Header Logo Image Option -->
+                    <div class="p-3 bg-slate-800/60 border border-slate-700 rounded-xl space-y-2">
+                        <label class="block text-xs font-bold text-slate-300 uppercase">Logo no Cabeçalho (Opcional)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="input-header-logo" oninput="updateDocument()" class="flex-1 bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" placeholder="URL da Logo">
+                            <button type="button" onclick="uploadImage('header-logo')" title="Upar do PC" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upar do PC
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Inline Diagram / Scope Image (Page 2) -->
+                    <div class="p-3 bg-slate-800/60 border border-slate-700 rounded-xl space-y-2">
+                        <label class="block text-xs font-bold text-slate-300 uppercase">Imagem de Escopo / Diagrama Técnico</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="input-scope-image" oninput="updateDocument()" class="flex-1 bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" placeholder="URL da imagem (ou envie do PC)">
+                            <button type="button" onclick="uploadImage('scope')" title="Upar do PC" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upar do PC
+                            </button>
+                        </div>
+                        <input type="text" id="input-scope-caption" oninput="updateDocument()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" placeholder="Legenda da imagem">
+                    </div>
+
+                    <!-- Signatures Area (Pinned at the bottom) -->
+                    <div class="p-3 bg-slate-800/60 border border-slate-700 rounded-xl space-y-3">
+                        <h4 class="text-xs font-bold text-slate-300 uppercase">Assinaturas / Aprovações (Fixas no Final)</h4>
+                        
+                        <div class="space-y-2 border-t border-slate-700 pt-2">
+                            <span class="text-[11px] font-semibold text-purple-400">Assinatura Solicitante</span>
+                            <input type="text" id="input-sig1-name" oninput="updateDocument()" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" placeholder="Nome / Cargo">
+                            <div class="flex gap-2">
+                                <input type="text" id="input-sig1-img" oninput="updateDocument()" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" placeholder="URL Imagem Assinatura">
+                                <button type="button" onclick="uploadImage('sig1')" title="Upar do PC" class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-semibold flex items-center gap-1 transition whitespace-nowrap">
+                                    <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upar do PC
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 border-t border-slate-700 pt-2">
+                            <span class="text-[11px] font-semibold text-purple-400">Assinatura Aprovador</span>
+                            <input type="text" id="input-sig2-name" oninput="updateDocument()" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" placeholder="Nome / Cargo">
+                            <div class="flex gap-2">
+                                <input type="text" id="input-sig2-img" oninput="updateDocument()" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" placeholder="URL Imagem Assinatura">
+                                <button type="button" onclick="uploadImage('sig2')" title="Upar do PC" class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-semibold flex items-center gap-1 transition whitespace-nowrap">
+                                    <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upar do PC
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Attachments Cards -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Galeria de Anexos Visuais (Página Final)</h3>
+                            <button onclick="addAttachmentCard()" class="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Adicionar Card
+                            </button>
+                        </div>
+                        <div id="attachments-container" class="space-y-3">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- RIGHT PANEL: LIVE PDF PREVIEW CANVAS -->
+        <main class="flex-1 bg-slate-950 overflow-y-auto p-4 md:p-8 flex justify-center items-start relative">
+            
+            <!-- Floating Zoom/Status Bar with Overflow Alert -->
+            <div id="status-bar" class="fixed bottom-6 right-8 bg-slate-900/95 backdrop-blur-md border border-slate-800 px-4 py-2.5 rounded-full shadow-2xl flex items-center space-x-3 z-30 no-print text-xs text-slate-300">
+                <span id="status-badge" class="flex items-center gap-1.5 font-medium text-emerald-400">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i> Layout A4 Validado • Sem páginas em branco
+                </span>
+            </div>
+
+            <!-- PDF PRINT ROOT CANVAS -->
+            <div id="pdf-root" class="print-container">
+
+                <!-- PAGE 1: COVER PAGE -->
+                <div id="preview-page-cover" class="a4-page p-0 relative flex bg-slate-900">
+                    <img id="preview-cover-img" src="https://i.imgur.com/bfVWX9N.png" alt="Capa" class="w-full h-full object-cover">
+                </div>
+
+                <!-- PAGE 2: SERVICE REQUEST BODY CONTENT -->
+                <div id="preview-page-body" class="a4-page p-8 flex flex-col justify-between text-[color:#230867] text-xs leading-relaxed">
+                    
+                    <div id="page-2-content" class="flex-1 flex flex-col overflow-hidden">
+                        <!-- Header Bar -->
+                        <div class="w-full flex items-center justify-between pb-1 mb-2.5">
+                            <div class="flex items-center gap-3">
+                                <img id="preview-header-logo-img" class="h-6 object-contain hidden" src="" alt="Header Logo">
+                                <h2 class="text-xs font-bold tracking-tight uppercase" style="color: #230867;">
+                                    Solicitação de serviços
+                                </h2>
+                            </div>
+                            <div class="text-right">
+                                <div id="preview-row-date" class="text-[10px]" style="color: #230867;"><span class="font-bold">Data: </span><span id="preview-doc-date"></span></div>
+                            </div>
+                        </div>
+
+                        <!-- Metadata Table Box -->
+                        <div id="metadata-container" class="rounded-lg p-2.5 mb-2.5 bg-slate-100 text-xs space-y-1.5">
+                            <!-- Row 1 -->
+                            <div id="meta-row-1" class="grid grid-cols-2 gap-4 pb-1 border-b border-slate-200">
+                                <div id="meta-item-1" class="flex gap-2">
+                                    <span class="font-bold min-w-[70px]" style="color: #230867;">De:</span>
+                                    <span id="preview-doc-from" class="font-medium" style="color: #230867;"></span>
+                                </div>
+                                <div id="meta-item-2" class="flex gap-2">
+                                    <span class="font-bold min-w-[70px]" style="color: #230867;">Para:</span>
+                                    <span id="preview-doc-to" class="font-medium" style="color: #230867;"></span>
+                                </div>
+                            </div>
+                            <!-- Row 2 -->
+                            <div id="meta-row-2" class="grid grid-cols-2 gap-4 pb-1 border-b border-slate-200">
+                                <div id="meta-item-3" class="flex gap-2">
+                                    <span class="font-bold min-w-[70px]" style="color: #230867;">Assunto:</span>
+                                    <span id="preview-doc-subject" class="font-medium" style="color: #230867;"></span>
+                                </div>
+                                <div id="meta-item-4" class="flex gap-2">
+                                    <span class="font-bold min-w-[70px]" style="color: #230867;">E-mail:</span>
+                                    <span id="preview-doc-email" class="font-medium" style="color: #230867;"></span>
+                                </div>
+                            </div>
+                            <!-- Row 3 -->
+                            <div id="meta-row-3" class="grid grid-cols-2 gap-4">
+                                <div id="meta-item-5" class="flex gap-2">
+                                    <span class="font-bold min-w-[70px]" style="color: #230867;">Prioridade:</span>
+                                    <span id="preview-doc-priority" class="font-medium px-1.5 py-0.2 rounded text-white bg-purple-700 text-[10px]"></span>
+                                </div>
+                                <div id="meta-item-6" class="flex gap-2">
+                                    <span class="font-bold min-w-[70px]" style="color: #230867;">Prazo SLA:</span>
+                                    <span id="preview-doc-sla" class="font-medium" style="color: #230867;"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Objective Section -->
+                        <div id="preview-section-objectives" class="mb-2.5">
+                            <h3 class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5" style="color: #230867;">
+                                <span class="w-2 h-2 bg-purple-600 rounded-full"></span> OBJETIVO:
+                            </h3>
+                            <ul id="preview-objectives-list" class="space-y-1 pl-2" style="color: #230867;">
+                                <!-- Dynamic Bullets -->
+                            </ul>
+                        </div>
+
+                        <!-- Tasks / Scope Breakdown Table -->
+                        <div id="preview-section-tasks" class="mb-2.5 border rounded-lg p-2 bg-slate-50/50" style="border-color: rgba(35,8,103,0.15);">
+                            <h3 class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5" style="color: #230867;">
+                                <i data-lucide="check-square" class="w-3.5 h-3.5 text-purple-600"></i> Atividades e Entregáveis Solicitados:
+                            </h3>
+                            <div id="preview-tasks-list" class="space-y-1" style="color: #230867;">
+                                <!-- Dynamic Tasks -->
+                            </div>
+                        </div>
+
+                        <!-- Inline Scope Image Attachment -->
+                        <div id="preview-section-scope-img" class="mb-2.5 hidden">
+                            <div class="border rounded-lg p-1.5 bg-slate-50 flex flex-col items-center" style="border-color: rgba(35,8,103,0.2);">
+                                <img id="preview-scope-img" class="max-h-28 object-contain rounded" src="" alt="Escopo técnico">
+                                <span id="preview-scope-caption" class="text-[10px] mt-1 font-medium italic" style="color: #230867;"></span>
+                            </div>
+                        </div>
+
+                        <!-- Links Section Table -->
+                        <div id="preview-section-links" class="mb-2.5 border rounded-xl p-2 bg-slate-50/70" style="border-color: rgba(35,8,103,0.15);">
+                            <h3 class="font-bold text-xs uppercase tracking-wider mb-1.5" style="color: #230867;">Links Clicáveis e Acessos Rápidos</h3>
+                            <div id="preview-links-list" class="space-y-1.5">
+                                <!-- Dynamic Links -->
+                            </div>
+                        </div>
+
+                        <!-- Strategic Importance Callout -->
+                        <div id="preview-section-urgency" class="mb-2.5 font-medium leading-relaxed text-[11px]" style="color: #230867;">
+                            <p id="preview-urgency-text">
+                                <strong style="color: #230867;">Importância Estratégica e Urgência:</strong> 
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Bottom Fixed Content Area: Action Warning Box & Signatures & Footer -->
+                    <div class="mt-auto pt-1">
+                        <!-- Call to Action Alert Warning Box (Centralizado e Formatado em 2 linhas) -->
+                        <div id="preview-section-action" class="bg-purple-50/80 p-2.5 rounded-lg flex items-center justify-center gap-2.5 mb-2" style="border-color: rgba(35,8,103,0.3);">
+                            <div class="p-1 bg-purple-600 text-white rounded-full flex-shrink-0">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <p id="preview-action-text" class="text-[10px] font-bold italic leading-tight text-center whitespace-pre-line" style="color: #230867;">***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,
+incluindo a data estimada para entrega***</p>
+                        </div>
+
+                        <!-- Signatures & Approvals Box -->
+                        <div id="preview-section-signatures" class="mb-2 pt-2 grid grid-cols-2 gap-6 text-center hidden" style="border-top: 1px solid rgba(35,8,103,0.2);">
+                            <div id="sig-box-1" class="flex flex-col items-center">
+                                <div class="h-8 flex items-center justify-center">
+                                    <img id="preview-sig1-img" src="" class="max-h-8 object-contain hidden" alt="Assinatura Solicitante">
+                                </div>
+                                <div class="w-full mt-1 pt-0.5" style="border-top: 1px solid rgba(35,8,103,0.3);">
+                                    <span id="preview-sig1-name" class="font-bold text-[10px]" style="color: #230867;">Solicitante</span>
+                                    <span class="block text-[8px]" style="color: #230867; opacity: 0.8;">Assinatura do Solicitante</span>
+                                </div>
+                            </div>
+
+                            <div id="sig-box-2" class="flex flex-col items-center">
+                                <div class="h-8 flex items-center justify-center">
+                                    <img id="preview-sig2-img" src="" class="max-h-8 object-contain hidden" alt="Assinatura Aprovador">
+                                </div>
+                                <div class="w-full mt-1 pt-0.5" style="border-top: 1px solid rgba(35,8,103,0.3);">
+                                    <span id="preview-sig2-name" class="font-bold text-[10px]" style="color: #230867;">Aprovador</span>
+                                    <span class="block text-[8px]" style="color: #230867; opacity: 0.8;">Aprovação / Recebimento</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Page 2 Footer -->
+                        <div class="pt-1.5 flex items-center justify-between text-[9px] font-medium" style="border-top: 1px solid rgba(35,8,103,0.2); color: #230867;">
+                            <span id="preview-footer-doc" class="font-bold">Solicitação de serviços</span>
+                            <span id="preview-footer-sub"></span>
+                            <span id="preview-page2-number">Página 2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAGE 3: VISUAL ATTACHMENTS & MOCKUPS -->
+                <div id="preview-page-attachments" class="a4-page p-8 flex flex-col justify-between text-[color:#230867] text-xs hidden">
+                    <div class="flex-1 flex flex-col">
+                        <!-- Header -->
+                        <div class="w-full flex items-center justify-between pb-1 mb-3">
+                            <h2 class="text-xs font-bold tracking-tight uppercase" style="color: #230867;">
+                                Anexos Visuais & Previews de Telas
+                            </h2>
+                            <span class="text-[10px] font-medium" style="color: #230867;">Anexo Técnico</span>
+                        </div>
+
+                        <!-- Attachment Grid -->
+                        <div id="preview-attachments-grid" class="grid grid-cols-2 gap-4">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+
+                    <!-- Page 3 Footer -->
+                    <div class="pt-1.5 flex items-center justify-between text-[9px] font-medium" style="border-top: 1px solid rgba(35,8,103,0.2); color: #230867;">
+                        <span class="font-bold">Anexo Técnico - Visualização de Interfaces</span>
+                        <span>Documento Interno</span>
+                        <span>Página Final</span>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Default State Configuration
+        const defaultState = {
+            showCover: true,
+            cover: {
+                image: "https://i.imgur.com/bfVWX9N.png",
+            },
+            header: {
+                date: "",
+                priority: "",
+                sla: "",
+                title: "Solicitação de serviços",
+                from: "",
+                to: "",
+                subject: "",
+                email: "",
+                footer: "",
+                logoUrl: ""
+            },
+            objectives: [],
+            tasks: [],
+            links: [],
+            scopeImage: "",
+            scopeCaption: "",
+            urgencyText: "",
+            actionText: "***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega***",
+            signatures: {
+                sig1Name: "",
+                sig1Img: "",
+                sig2Name: "",
+                sig2Img: ""
+            },
+            attachments: []
+        };
+
+        let state = JSON.parse(JSON.stringify(defaultState));
+
+        // Upload Local Images from Computer
+        function uploadImage(target, index = null) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const dataUrl = event.target.result;
+                    if (target === 'cover') {
+                        state.cover.image = dataUrl;
+                        document.getElementById('input-cover-image').value = dataUrl;
+                    } else if (target === 'header-logo') {
+                        state.header.logoUrl = dataUrl;
+                        document.getElementById('input-header-logo').value = dataUrl;
+                    } else if (target === 'scope') {
+                        state.scopeImage = dataUrl;
+                        document.getElementById('input-scope-image').value = dataUrl;
+                    } else if (target === 'sig1') {
+                        state.signatures.sig1Img = dataUrl;
+                        document.getElementById('input-sig1-img').value = dataUrl;
+                    } else if (target === 'sig2') {
+                        state.signatures.sig2Img = dataUrl;
+                        document.getElementById('input-sig2-img').value = dataUrl;
+                    } else if (target === 'attachment' && index !== null) {
+                        state.attachments[index].image = dataUrl;
+                        renderAttachmentsInputs();
+                    }
+                    updateDocument();
+                };
+                reader.readAsDataURL(file);
+            };
+            fileInput.click();
+        }
+
+        // App Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSampleData(); // Carrega os dados de exemplo automaticamente
+            if (window.lucide) lucide.createIcons();
+        });
+
+        // Tab Switcher
+        function switchTab(tabId) {
+            const tabs = ['capa', 'cabecalho', 'conteudo', 'imagens'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const section = document.getElementById(`section-${t}`);
+                if (t === tabId) {
+                    btn.className = "flex-1 py-3 px-2 border-b-2 border-purple-500 text-purple-400 font-semibold flex items-center justify-center gap-1.5 transition";
+                    section.classList.remove('hidden');
+                } else {
+                    btn.className = "flex-1 py-3 px-2 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5 transition";
+                    section.classList.add('hidden');
+                }
+            });
+        }
+
+        // Initialize Form Inputs from State
+        function initFormValues() {
+            document.getElementById('input-cover-image').value = state.cover.image;
+            document.getElementById('input-toggle-cover').checked = state.showCover;
+
+            document.getElementById('input-doc-date').value = state.header.date;
+            document.getElementById('input-doc-priority').value = state.header.priority;
+            document.getElementById('input-doc-sla').value = state.header.sla;
+            document.getElementById('input-doc-from').value = state.header.from;
+            document.getElementById('input-doc-to').value = state.header.to;
+            document.getElementById('input-doc-subject').value = state.header.subject;
+            document.getElementById('input-doc-email').value = state.header.email;
+            document.getElementById('input-doc-footer').value = state.header.footer;
+
+            document.getElementById('input-urgency-text').value = state.urgencyText;
+            document.getElementById('input-action-text').value = state.actionText;
+
+            document.getElementById('input-header-logo').value = state.header.logoUrl || "";
+            document.getElementById('input-scope-image').value = state.scopeImage || "";
+            document.getElementById('input-scope-caption').value = state.scopeCaption || "";
+
+            document.getElementById('input-sig1-name').value = state.signatures.sig1Name || "";
+            document.getElementById('input-sig1-img').value = state.signatures.sig1Img || "";
+            document.getElementById('input-sig2-name').value = state.signatures.sig2Name || "";
+            document.getElementById('input-sig2-img').value = state.signatures.sig2Img || "";
+
+            renderObjectivesInputs();
+            renderTasksInputs();
+            renderLinksInputs();
+            renderAttachmentsInputs();
+        }
+
+        // Dynamic Objective Inputs
+        function renderObjectivesInputs() {
+            const container = document.getElementById('objectives-container');
+            container.innerHTML = '';
+            state.objectives.forEach((obj, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex items-start gap-2";
+                div.innerHTML = `
+                    <textarea oninput="state.objectives[${idx}] = this.value; updateDocument();" rows="2" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-purple-500">${obj}</textarea>
+                    <button onclick="removeObjectiveItem(${idx})" class="p-2 text-slate-500 hover:text-red-400">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function addObjectiveItem() {
+            state.objectives.push("");
+            renderObjectivesInputs();
+            updateDocument();
+        }
+
+        function removeObjectiveItem(idx) {
+            state.objectives.splice(idx, 1);
+            renderObjectivesInputs();
+            updateDocument();
+        }
+
+        // Dynamic Tasks Inputs
+        function renderTasksInputs() {
+            const container = document.getElementById('tasks-container');
+            container.innerHTML = '';
+            state.tasks.forEach((tsk, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2";
+                div.innerHTML = `
+                    <input type="text" value="${tsk}" oninput="state.tasks[${idx}] = this.value; updateDocument();" class="flex-1 bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-white">
+                    <button onclick="removeTaskItem(${idx})" class="p-1.5 text-slate-500 hover:text-red-400">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function addTaskItem() {
+            state.tasks.push("");
+            renderTasksInputs();
+            updateDocument();
+        }
+
+        function removeTaskItem(idx) {
+            state.tasks.splice(idx, 1);
+            renderTasksInputs();
+            updateDocument();
+        }
+
+        // Dynamic Links Inputs
+        function renderLinksInputs() {
+            const container = document.getElementById('links-container');
+            container.innerHTML = '';
+            state.links.forEach((lnk, idx) => {
+                const div = document.createElement('div');
+                div.className = "p-3 bg-slate-800/80 border border-slate-700 rounded-lg space-y-2";
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Link #${idx + 1}</span>
+                        <button onclick="removeLinkItem(${idx})" class="text-slate-500 hover:text-red-400">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Nome do Link" value="${lnk.name}" oninput="state.links[${idx}].name = this.value; updateDocument();" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white">
+                        <input type="text" placeholder="URL Target" value="${lnk.url}" oninput="state.links[${idx}].url = this.value; updateDocument();" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function addLinkItem() {
+            state.links.push({ name: "", url: "" });
+            renderLinksInputs();
+            updateDocument();
+        }
+
+        function removeLinkItem(idx) {
+            state.links.splice(idx, 1);
+            renderLinksInputs();
+            updateDocument();
+        }
+
+        // Dynamic Attachments Inputs
+        function renderAttachmentsInputs() {
+            const container = document.getElementById('attachments-container');
+            container.innerHTML = '';
+            state.attachments.forEach((att, idx) => {
+                const div = document.createElement('div');
+                div.className = "p-3 bg-slate-800/80 border border-slate-700 rounded-lg space-y-2";
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Anexo Visual #${idx + 1}</span>
+                        <button onclick="removeAttachmentCard(${idx})" class="text-slate-500 hover:text-red-400">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                    <input type="text" placeholder="Título / Identificador" value="${att.title}" oninput="state.attachments[${idx}].title = this.value; updateDocument();" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white">
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="URL da Imagem" value="${att.image}" oninput="state.attachments[${idx}].image = this.value; updateDocument();" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white">
+                        <button onclick="uploadImage('attachment', ${idx})" title="Upar do PC" class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-semibold flex items-center gap-1 transition whitespace-nowrap">
+                            <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upar do PC
+                        </button>
+                    </div>
+                    <input type="text" placeholder="URL do Link (opcional)" value="${att.url || ''}" oninput="state.attachments[${idx}].url = this.value; updateDocument();" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white">
+                `;
+                container.appendChild(div);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function addAttachmentCard() {
+            state.attachments.push({ title: "", image: "", url: "" });
+            renderAttachmentsInputs();
+            updateDocument();
+        }
+
+        function removeAttachmentCard(idx) {
+            state.attachments.splice(idx, 1);
+            renderAttachmentsInputs();
+            updateDocument();
+        }
+
+        // Main Document Synchronizer & Page Break Controller
+        function updateDocument() {
+            // Read controls
+            state.showCover = document.getElementById('input-toggle-cover').checked;
+            state.cover.image = document.getElementById('input-cover-image').value.trim();
+
+            state.header.date = document.getElementById('input-doc-date').value;
+            state.header.priority = document.getElementById('input-doc-priority').value;
+            state.header.sla = document.getElementById('input-doc-sla').value;
+            state.header.from = document.getElementById('input-doc-from').value;
+            state.header.to = document.getElementById('input-doc-to').value;
+            state.header.subject = document.getElementById('input-doc-subject').value;
+            state.header.email = document.getElementById('input-doc-email').value;
+            state.header.footer = document.getElementById('input-doc-footer').value;
+
+            state.urgencyText = document.getElementById('input-urgency-text').value;
+            state.actionText = document.getElementById('input-action-text').value;
+
+            state.header.logoUrl = document.getElementById('input-header-logo').value.trim();
+            state.scopeImage = document.getElementById('input-scope-image').value.trim();
+            state.scopeCaption = document.getElementById('input-scope-caption').value;
+
+            state.signatures.sig1Name = document.getElementById('input-sig1-name').value;
+            state.signatures.sig1Img = document.getElementById('input-sig1-img').value.trim();
+            state.signatures.sig2Name = document.getElementById('input-sig2-name').value;
+            state.signatures.sig2Img = document.getElementById('input-sig2-img').value.trim();
+
+            // 1. Cover Page Handling
+            const coverPage = document.getElementById('preview-page-cover');
+            if (!state.showCover) {
+                coverPage.style.display = 'none';
+            } else {
+                coverPage.style.display = 'flex';
+                document.getElementById('preview-cover-img').src = state.cover.image;
+            }
+
+            // 2. Header & Date
+            const headerLogo = document.getElementById('preview-header-logo-img');
+            if (state.header.logoUrl) {
+                headerLogo.src = state.header.logoUrl;
+                headerLogo.classList.remove('hidden');
+            } else {
+                headerLogo.classList.add('hidden');
+            }
+
+            const rowDate = document.getElementById('preview-row-date');
+            if (state.header.date) {
+                document.getElementById('preview-doc-date').innerText = state.header.date;
+                rowDate.style.display = 'block';
+            } else {
+                rowDate.style.display = 'none';
+            }
+
+            // Metadata Grid Rows
+            const hasItem1 = setMetaField('meta-item-1', 'De:', state.header.from, 'preview-doc-from');
+            const hasItem2 = setMetaField('meta-item-2', 'Para:', state.header.to, 'preview-doc-to');
+            document.getElementById('meta-row-1').style.display = (hasItem1 || hasItem2) ? 'grid' : 'none';
+
+            const hasItem3 = setMetaField('meta-item-3', 'Assunto:', state.header.subject, 'preview-doc-subject');
+            const hasItem4 = setMetaField('meta-item-4', 'E-mail:', state.header.email, 'preview-doc-email');
+            document.getElementById('meta-row-2').style.display = (hasItem3 || hasItem4) ? 'grid' : 'none';
+
+            const item5 = document.getElementById('meta-item-5');
+            let hasItem5 = false;
+            if (state.header.priority) {
+                item5.style.display = 'flex';
+                document.getElementById('preview-doc-priority').innerText = state.header.priority;
+                hasItem5 = true;
+            } else {
+                item5.style.display = 'none';
+            }
+
+            const item6 = document.getElementById('meta-item-6');
+            let hasItem6 = false;
+            if (state.header.sla) {
+                item6.style.display = 'flex';
+                document.getElementById('preview-doc-sla').innerText = state.header.sla;
+                hasItem6 = true;
+            } else {
+                item6.style.display = 'none';
+            }
+            document.getElementById('meta-row-3').style.display = (hasItem5 || hasItem6) ? 'grid' : 'none';
+
+            const metadataContainer = document.getElementById('metadata-container');
+            if (!hasItem1 && !hasItem2 && !hasItem3 && !hasItem4 && !hasItem5 && !hasItem6) {
+                metadataContainer.style.display = 'none';
+            } else {
+                metadataContainer.style.display = 'block';
+            }
+
+            // Footers
+            document.getElementById('preview-footer-doc').innerText = state.header.title || "Solicitação de Serviços";
+            document.getElementById('preview-footer-sub').innerText = state.header.footer || "";
+
+            // 3. Objectives Section
+            const objSection = document.getElementById('preview-section-objectives');
+            const filteredObjectives = state.objectives.filter(o => o.trim() !== "");
+            if (filteredObjectives.length > 0) {
+                objSection.style.display = 'block';
+                const objList = document.getElementById('preview-objectives-list');
+                objList.innerHTML = '';
+                filteredObjectives.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-start gap-2 font-normal leading-tight text-[11px]";
+                    li.innerHTML = `<span class="text-purple-600 font-bold text-sm leading-none">•</span> <span>${item}</span>`;
+                    objList.appendChild(li);
+                });
+            } else {
+                objSection.style.display = 'none';
+            }
+
+            // 4. Tasks Section
+            const tasksSection = document.getElementById('preview-section-tasks');
+            const filteredTasks = state.tasks.filter(t => t.trim() !== "");
+            if (filteredTasks.length > 0) {
+                tasksSection.style.display = 'block';
+                const tasksList = document.getElementById('preview-tasks-list');
+                tasksList.innerHTML = '';
+                filteredTasks.forEach(tsk => {
+                    const item = document.createElement('div');
+                    item.className = "flex items-center gap-2 font-medium text-[11px]";
+                    item.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-purple-600"></i> <span>${tsk}</span>`;
+                    tasksList.appendChild(item);
+                });
+            } else {
+                tasksSection.style.display = 'none';
+            }
+
+            // 5. Scope Image Section
+            const scopeSec = document.getElementById('preview-section-scope-img');
+            if (state.scopeImage) {
+                scopeSec.style.display = 'block';
+                document.getElementById('preview-scope-img').src = state.scopeImage;
+                document.getElementById('preview-scope-caption').innerText = state.scopeCaption || "";
+            } else {
+                scopeSec.style.display = 'none';
+            }
+
+            // 6. Links Section
+            const linksSection = document.getElementById('preview-section-links');
+            const validLinks = state.links.filter(l => l.name.trim() !== "" && l.url.trim() !== "");
+            if (validLinks.length > 0) {
+                linksSection.style.display = 'block';
+                const linksList = document.getElementById('preview-links-list');
+                linksList.innerHTML = '';
+                validLinks.forEach(lnk => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between";
+                    row.innerHTML = `
+                        <div class="flex items-center font-bold text-xs" style="color: #230867;">
+                            <span class="text-purple-600 mr-2">•</span> ${lnk.name}
+                        </div>
+                        <div class="dotted-line"></div>
+                        <a href="${lnk.url}" target="_blank" class="px-3.5 py-0.5 text-[10px] font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-full shadow-sm transition flex items-center gap-1">
+                            Link
+                        </a>
+                    `;
+                    linksList.appendChild(row);
+                });
+            } else {
+                linksSection.style.display = 'none';
+            }
+
+            // 7. Urgency Box
+            const urgencySec = document.getElementById('preview-section-urgency');
+            if (state.urgencyText && state.urgencyText.trim() !== "") {
+                urgencySec.style.display = 'block';
+                document.getElementById('preview-urgency-text').innerHTML = `<strong style="color: #230867;">Importância Estratégica e Urgência:</strong> ${state.urgencyText}`;
+            } else {
+                urgencySec.style.display = 'none';
+            }
+
+            // 8. Action Warning Box
+            const actionSec = document.getElementById('preview-section-action');
+            if (state.actionText && state.actionText.trim() !== "") {
+                actionSec.style.display = 'flex';
+                document.getElementById('preview-action-text').innerText = state.actionText;
+            } else {
+                actionSec.style.display = 'flex';
+                document.getElementById('preview-action-text').innerText = "***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega***";
+            }
+
+            // 9. Signatures Box
+            const sigsSec = document.getElementById('preview-section-signatures');
+            const hasSig1 = state.signatures.sig1Name.trim() || state.signatures.sig1Img.trim();
+            const hasSig2 = state.signatures.sig2Name.trim() || state.signatures.sig2Img.trim();
+
+            if (hasSig1 || hasSig2) {
+                sigsSec.style.display = 'grid';
+                
+                const sig1Box = document.getElementById('sig-box-1');
+                if (hasSig1) {
+                    sig1Box.style.display = 'flex';
+                    document.getElementById('preview-sig1-name').innerText = state.signatures.sig1Name || "Solicitante";
+                    const img1 = document.getElementById('preview-sig1-img');
+                    if (state.signatures.sig1Img) {
+                        img1.src = state.signatures.sig1Img;
+                        img1.classList.remove('hidden');
+                    } else {
+                        img1.classList.add('hidden');
+                    }
+                } else {
+                    sig1Box.style.display = 'none';
+                }
+
+                const sig2Box = document.getElementById('sig-box-2');
+                if (hasSig2) {
+                    sig2Box.style.display = 'flex';
+                    document.getElementById('preview-sig2-name').innerText = state.signatures.sig2Name || "Aprovador";
+                    const img2 = document.getElementById('preview-sig2-img');
+                    if (state.signatures.sig2Img) {
+                        img2.src = state.signatures.sig2Img;
+                        img2.classList.remove('hidden');
+                    } else {
+                        img2.classList.add('hidden');
+                    }
+                } else {
+                    sig2Box.style.display = 'none';
+                }
+
+            } else {
+                sigsSec.style.display = 'none';
+            }
+
+            // 10. Attachments Page (Page 3)
+            const page3 = document.getElementById('preview-page-attachments');
+            const validAttachments = state.attachments.filter(a => a.title.trim() !== "" && a.image.trim() !== "");
+            if (validAttachments.length > 0) {
+                page3.style.display = 'flex';
+                const attachmentsGrid = document.getElementById('preview-attachments-grid');
+                attachmentsGrid.innerHTML = '';
+                validAttachments.forEach(att => {
+                    const card = document.createElement('div');
+                    card.className = "flex flex-col items-center border rounded-xl p-2.5 bg-slate-50 shadow-sm";
+                    card.style.borderColor = "rgba(35,8,103,0.2)";
+                    
+                    let linkHtml = '';
+                    if (att.url && att.url.trim() !== '') {
+                        linkHtml = `<a href="${att.url}" target="_blank" class="mb-2 px-4 py-0.5 text-[10px] font-bold text-white bg-purple-700 rounded-full shadow hover:bg-purple-800 transition flex items-center gap-1">Link</a>`;
+                    }
+
+                    card.innerHTML = `
+                        ${linkHtml}
+                        <div class="w-full h-40 rounded-lg overflow-hidden border shadow-inner bg-slate-900" style="border-color: rgba(35,8,103,0.2);">
+                            <img src="${att.image}" alt="${att.title}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x260/1e293b/ffffff?text=Erro+ao+carregar+imagem'">
+                        </div>
+                        <span class="mt-2 text-xs font-bold" style="color: #230867;">${att.title}</span>
+                    `;
+                    attachmentsGrid.appendChild(card);
+                });
+            } else {
+                page3.style.display = 'none';
+            }
+
+            // Dynamic Page Break Controller (Ensures 'page-break' is NEVER added to the last visible page)
+            const visiblePages = Array.from(document.querySelectorAll('.a4-page')).filter(p => window.getComputedStyle(p).display !== 'none');
+            visiblePages.forEach((page, idx) => {
+                if (idx < visiblePages.length - 1) {
+                    page.classList.add('page-break');
+                } else {
+                    page.classList.remove('page-break');
+                }
+            });
+
+            // Overflow Detector for Page 2
+            checkPage2Overflow();
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Helper for metadata field
+        function setMetaField(containerId, label, val, valElemId) {
+            const container = document.getElementById(containerId);
+            if (val && val.trim() !== "") {
+                container.style.display = 'flex';
+                document.getElementById(valElemId).innerText = val;
+                return true;
+            } else {
+                container.style.display = 'none';
+                return false;
+            }
+        }
+
+        // Real-Time Overflow Alert Check for Page 2
+        function checkPage2Overflow() {
+            const page2 = document.getElementById('preview-page-body');
+            const statusBadge = document.getElementById('status-badge');
+            
+            // Check if scrollHeight exceeds clientHeight (297mm bound)
+            if (page2.scrollHeight > page2.clientHeight + 2) {
+                statusBadge.className = "flex items-center gap-1.5 font-bold text-amber-400 animate-pulse";
+                statusBadge.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Atenção: Conteúdo excedeu a Folha A4! Remova itens para evitar quebras involuntárias.`;
+            } else {
+                statusBadge.className = "flex items-center gap-1.5 font-medium text-emerald-400";
+                statusBadge.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4"></i> Layout A4 Validado • Sem páginas em branco`;
+            }
+        }
+
+        // Reset to Default Sample Data
+        function loadSampleData() {
+            state.cover.image = "https://i.imgur.com/bfVWX9N.png";
+            state.showCover = true;
+            state.header.date = "13 de Agosto 2026";
+            state.header.priority = "Alta";
+            state.header.sla = "25/08/2026";
+            state.header.from = "João (Marketing)";
+            state.header.to = "Departamento de Tecnologia da Informação";
+            state.header.subject = "Solicitação de Suporte e Serviços";
+            state.header.email = "usuario@exemplo.com";
+            state.header.footer = "Documento Interno | Netcare Marketing";
+            state.objectives = [
+                "Solicitamos a análise desta demanda e o apoio necessário para sua execução.",
+                "Caso sejam necessários documentos, acessos ou informações adicionais, favor nos informar para que possamos providenciá-los."
+            ];
+            state.tasks = ["Análise da solicitação", "Execução dos serviços necessários"];
+            state.links = [
+                { name: "Documento de referência", url: "https://exemplo.com" },
+                { name: "Pasta com arquivos", url: "https://exemplo.com" },
+                { name: "Briefing da solicitação", url: "https://exemplo.com" },
+                { name: "Planilha de acompanhamento", url: "https://exemplo.com" }
+            ];
+            state.urgencyText = "A conclusão deste processo é fundamental para o avanço do planejamento de marketing, inicio de campanhas e atualização dos canais oficiais do grupo.";
+            state.actionText = "***Favor confirmar o recebimento desta solicitação e informar a previsão de conclusão das atividades solicitadas,\nincluindo a data estimada para entrega***";
+            state.signatures.sig1Name = "João - Solicitante";
+            state.signatures.sig2Name = "Gestor TI";
+            state.attachments = [
+                { title: "Netcare", image: "https://placehold.co/400x260/230867/ffffff?text=Netcare", url: "https://exemplo.com" },
+                { title: "Fiberchip", image: "https://placehold.co/400x260/230867/ffffff?text=Fiberchip", url: "https://exemplo.com" }
+            ];
+            
+            initFormValues();
+            updateDocument();
+        }
+
+        // Fail-Safe Zero-Blank-Page PDF Export Engine
+        async function generatePDF() {
+            const btn = document.getElementById('pdfBtn');
+            const originalBtnText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Gerando PDF...`;
+            if (window.lucide) lucide.createIcons();
+
+            // 1. Isolamos estritamente apenas as páginas VISÍVEIS
+            const visiblePages = Array.from(document.querySelectorAll('#pdf-root .a4-page'))
+                .filter(p => window.getComputedStyle(p).display !== 'none');
+
+            // 2. Container mestre posicionado no topo (0,0) atrás da interface (z-index negativo) para o html2canvas renderizar perfeitamente
+            const exportContainer = document.createElement('div');
+            exportContainer.style.position = 'fixed';
+            exportContainer.style.left = '0';
+            exportContainer.style.top = '0';
+            exportContainer.style.zIndex = '-99999';
+            exportContainer.style.width = '210mm';
+            exportContainer.style.background = '#ffffff';
+            exportContainer.style.margin = '0';
+            exportContainer.style.padding = '0';
+
+            visiblePages.forEach((page, idx) => {
+                const clone = page.cloneNode(true);
+                
+                // Removemos explicitamente a classe de quebra CSS para evitar conflitos com o jsPDF
+                clone.classList.remove('page-break'); 
+                
+                clone.style.margin = '0';
+                clone.style.padding = '0';
+                clone.style.boxShadow = 'none';
+                clone.style.border = 'none';
+                clone.style.width = '210mm';
+                clone.style.height = '296.5mm'; 
+                clone.style.maxHeight = '296.5mm';
+                clone.style.overflow = 'hidden';
+                
+                // Removemos regras CSS nativas de quebra
+                clone.style.pageBreakAfter = 'avoid';
+                clone.style.breakAfter = 'avoid';
+                
+                exportContainer.appendChild(clone);
+
+                // Injetamos a classe NATIVA do html2pdf apenas ENTRE as páginas, NUNCA na última
+                if (idx < visiblePages.length - 1) {
+                    const pageBreak = document.createElement('div');
+                    pageBreak.classList.add('html2pdf__page-break');
+                    exportContainer.appendChild(pageBreak);
+                }
+            });
+
+            document.body.appendChild(exportContainer);
+
+            const opt = {
+                margin: 0,
+                filename: `Solicitacao_de_Servicos.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    allowTaint: true,
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+                pagebreak: { mode: ['css', 'legacy'] } 
+            };
+
+            try {
+                await html2pdf().set(opt).from(exportContainer).save();
+            } catch (err) {
+                console.error('Erro ao gerar PDF:', err);
+                alert('Ocorreu um erro ao gerar o PDF.');
+            } finally {
+                if (document.body.contains(exportContainer)) {
+                    document.body.removeChild(exportContainer);
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>
