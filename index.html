@@ -600,7 +600,7 @@
                             <div id="meta-row-3" class="grid grid-cols-2 gap-6">
                                 <div id="meta-item-5" class="flex gap-2">
                                     <span class="font-bold min-w-[70px]" style="color: #230867;">Prioridade:</span>
-                                    <span id="preview-doc-priority" class="font-medium px-1.5 py-0.2 rounded text-white bg-purple-700 text-[10px]"></span>
+                                    <span id="preview-doc-priority" class="font-medium px-1.5 py-0.2 rounded text-[10px]"></span>
                                 </div>
                                 <div id="meta-item-6" class="flex gap-2">
                                     <span class="font-bold min-w-[70px]" style="color: #230867;">Prazo SLA:</span>
@@ -1064,7 +1064,17 @@ incluindo a data estimada para entrega.</p>
             let hasItem5 = false;
             if (state.header.priority) {
                 item5.style.display = 'flex';
-                document.getElementById('preview-doc-priority').innerText = state.header.priority;
+                const priorityBadge = document.getElementById('preview-doc-priority');
+                const priorityColors = {
+                    'Crítica': { background: '#dc2626', text: '#ffffff' },
+                    'Alta': { background: '#f97316', text: '#ffffff' },
+                    'Média': { background: '#facc15', text: '#230867' },
+                    'Baixa': { background: '#16a34a', text: '#ffffff' }
+                };
+                const priorityStyle = priorityColors[state.header.priority];
+                priorityBadge.innerText = state.header.priority;
+                priorityBadge.style.backgroundColor = priorityStyle.background;
+                priorityBadge.style.color = priorityStyle.text;
                 hasItem5 = true;
             } else {
                 item5.style.display = 'none';
